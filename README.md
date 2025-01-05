@@ -50,6 +50,8 @@ pronto, você vai visualizar o projeto.
 
 ---
 
+#### Via Github
+
 1. Clone o repositorio abaixo:
 
 ```

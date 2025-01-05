@@ -19,7 +19,7 @@ interface Word {
 }
 
 export default function WordList() {
-  const [searchTerm, setSearchTerm] = useState<string>(""); // Estado para o termo de busca
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [words, setWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export default function WordList() {
       const data = await response.json();
 
       const fetchedWords: Word[] = data.map((entry: any) => ({
-        id: entry.word, // Usando a palavra como ID único
+        id: entry.word,
         word: entry.word,
         phonetic: entry.phonetic || "Pronúncia não disponível",
         definition:
@@ -72,21 +72,18 @@ export default function WordList() {
 
   return (
     <View style={styles.container}>
-      {/* Campo de Pesquisa */}
       <TextInput
         style={styles.input}
         placeholder="Digite uma palavra"
         value={searchTerm}
         onChangeText={setSearchTerm}
-        onSubmitEditing={fetchWordsFromAPI} // Permite buscar ao pressionar Enter
+        onSubmitEditing={fetchWordsFromAPI}
       />
 
-      {/* Botão de Buscar */}
       <TouchableOpacity style={styles.button} onPress={fetchWordsFromAPI}>
         <Text style={styles.buttonText}>Buscar</Text>
       </TouchableOpacity>
 
-      {/* Loading */}
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#0000ff" />
@@ -94,13 +91,11 @@ export default function WordList() {
         </View>
       )}
 
-      {/* Erro */}
       {error && <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>}
 
-      {/* Lista de Resultados */}
       <FlatList
         data={words}
-        keyExtractor={(item, index) => `${item.id}-${index}`} // Combina id e índice
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Text style={styles.word}>{item.word}</Text>

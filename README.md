@@ -14,7 +14,10 @@ O proposito do teste é criar uma app para listar palavras em ingles usando como
 
 ### Capturas de Tela / Demo
 
-![[demo.mp4]]
+
+https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
+
+
 
 #### Funcionalidades
 

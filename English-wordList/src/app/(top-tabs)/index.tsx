@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  Modal,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { db } from "../../../firebaseConfig";
+import { ref, set, onValue, push } from "firebase/database";
 
 interface Word {
   id: string;
@@ -18,22 +21,295 @@ interface Word {
   example?: string;
 }
 
+const words: string[] = [
+  "apple",
+  "ant",
+  "astronaut",
+  "avocado",
+  "argument",
+  "art",
+  "alarm",
+  "address",
+  "adventure",
+  "adopt",
+  "banana",
+  "boat",
+  "breeze",
+  "book",
+  "bird",
+  "ball",
+  "butterfly",
+  "bicycle",
+  "brick",
+  "bloom",
+  "car",
+  "cat",
+  "cloud",
+  "cup",
+  "calendar",
+  "chocolate",
+  "crayon",
+  "camera",
+  "castle",
+  "candle",
+  "dog",
+  "dance",
+  "dream",
+  "door",
+  "desk",
+  "dinosaur",
+  "dolphin",
+  "doctor",
+  "drum",
+  "dragon",
+  "elephant",
+  "energy",
+  "echo",
+  "engine",
+  "egg",
+  "earth",
+  "envelope",
+  "education",
+  "electricity",
+  "experiment",
+  "fish",
+  "flower",
+  "forest",
+  "fan",
+  "flag",
+  "freedom",
+  "friend",
+  "fountain",
+  "football",
+  "feather",
+  "grape",
+  "guitar",
+  "gold",
+  "game",
+  "giraffe",
+  "glass",
+  "garden",
+  "glove",
+  "group",
+  "goal",
+  "house",
+  "happy",
+  "hero",
+  "hat",
+  "hammer",
+  "honey",
+  "hippopotamus",
+  "horizon",
+  "heart",
+  "history",
+  "ice",
+  "idea",
+  "island",
+  "illustration",
+  "insect",
+  "internet",
+  "injury",
+  "impact",
+  "information",
+  "intelligence",
+  "jungle",
+  "jump",
+  "joy",
+  "jacket",
+  "jelly",
+  "journey",
+  "joke",
+  "jog",
+  "jewel",
+  "juice",
+  "kangaroo",
+  "kite",
+  "king",
+  "key",
+  "kitchen",
+  "kiwi",
+  "knight",
+  "knowledge",
+  "kingdom",
+  "kettle",
+  "lemon",
+  "lamp",
+  "laughter",
+  "lake",
+  "lawn",
+  "light",
+  "lunch",
+  "leap",
+  "lion",
+  "language",
+  "moon",
+  "mountain",
+  "magic",
+  "mirror",
+  "money",
+  "magnet",
+  "mango",
+  "mountain",
+  "mouse",
+  "music",
+  "night",
+  "nature",
+  "nest",
+  "nose",
+  "note",
+  "needle",
+  "nurse",
+  "net",
+  "nut",
+  "neighbor",
+  "ocean",
+  "orange",
+  "owl",
+  "octopus",
+  "office",
+  "onion",
+  "oasis",
+  "orange",
+  "outfit",
+  "oxygen",
+  "pencil",
+  "planet",
+  "peace",
+  "paper",
+  "penguin",
+  "piano",
+  "plumber",
+  "parrot",
+  "picture",
+  "pool",
+  "queen",
+  "quiet",
+  "quilt",
+  "quarry",
+  "question",
+  "quick",
+  "quiz",
+  "quality",
+  "quarter",
+  "quota",
+  "rainbow",
+  "river",
+  "rose",
+  "rock",
+  "robot",
+  "rabbit",
+  "roof",
+  "race",
+  "rug",
+  "rain",
+  "sun",
+  "star",
+  "snow",
+  "sock",
+  "sand",
+  "snake",
+  "school",
+  "strawberry",
+  "soup",
+  "storm",
+  "tree",
+  "tiger",
+  "travel",
+  "table",
+  "turtle",
+  "train",
+  "tooth",
+  "television",
+  "trophy",
+  "telescope",
+  "umbrella",
+  "unicorn",
+  "unity",
+  "under",
+  "uniform",
+  "universe",
+  "usual",
+  "up",
+  "urgent",
+  "unaware",
+  "violin",
+  "volcano",
+  "victory",
+  "vase",
+  "vampire",
+  "village",
+  "vision",
+  "vacuum",
+  "vulture",
+  "vote",
+  "water",
+  "whale",
+  "wonder",
+  "wind",
+  "waltz",
+  "whistle",
+  "world",
+  "wood",
+  "wallet",
+  "wall",
+  "xylophone",
+  "x-ray",
+  "xerox",
+  "xenon",
+  "xmas",
+  "x-factor",
+  "xenophobia",
+  "xylophonist",
+  "xenial",
+  "xenopus",
+  "yellow",
+  "yoga",
+  "youth",
+  "yawn",
+  "yoga",
+  "yacht",
+  "yolk",
+  "yummy",
+  "yarn",
+  "year",
+  "zebra",
+  "zipper",
+  "zoom",
+  "zero",
+  "zombie",
+  "zone",
+  "zinc",
+  "zodiac",
+  "zoo",
+  "zeal",
+];
+
 export default function WordList() {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [words, setWords] = useState<Word[]>([]);
+  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const fetchWordsFromAPI = async () => {
-    if (!searchTerm.trim()) return; // Impede busca vazia
+  useEffect(() => {
+    const historyRef = ref(db, "history");
+    onValue(historyRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setHistory(Object.values(data) as string[]);
+      } else {
+        setHistory([]);
+      }
+    });
+  }, []);
 
+  const fetchWordDetails = async (word: string) => {
     setLoading(true);
     setError(null);
-    setWords([]);
 
     try {
       const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm}`
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
       );
 
       if (!response.ok) {
@@ -42,12 +318,12 @@ export default function WordList() {
 
       const data = await response.json();
 
-      const fetchedWords: Word[] = data.map((entry: any) => ({
-        id: entry.word,
-        word: entry.word,
-        phonetic: entry.phonetic || "Pronúncia não disponível",
+      const fetchedWord: Word = {
+        id: data[0].word,
+        word: data[0].word,
+        phonetic: data[0].phonetic || "Pronúncia não disponível",
         definition:
-          entry.meanings
+          data[0].meanings
             ?.flatMap((meaning: any) =>
               meaning.definitions.map((def: any) => {
                 const definitionText = def.definition;
@@ -58,62 +334,72 @@ export default function WordList() {
               })
             )
             ?.join("\n") || "Definição não disponível",
-        synonyms: entry.meanings?.flatMap((meaning: any) => meaning.synonyms),
-      }));
+        synonyms: data[0].meanings?.flatMap((meaning: any) => meaning.synonyms),
+      };
 
-      setWords(fetchedWords);
+      await set(ref(db, `words/${fetchedWord.word}`), data);
+      console.log("Dados enviados com sucesso para o Firebase!");
+
+      await push(ref(db, "history"), fetchedWord.word);
+
+      setSelectedWord(fetchedWord);
+      setModalVisible(true);
     } catch (err: any) {
-      console.error("Erro ao buscar palavras:", err);
+      console.error("Erro ao buscar palavra:", err);
       setError(err.message || "Erro ao carregar os dados.");
     } finally {
       setLoading(false);
     }
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedWord(null);
+  };
+
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Digite uma palavra"
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-        onSubmitEditing={fetchWordsFromAPI}
-      />
+      <Text style={styles.title}>Word List</Text>
 
-      <TouchableOpacity style={styles.button} onPress={fetchWordsFromAPI}>
-        <Text style={styles.buttonText}>Buscar</Text>
-      </TouchableOpacity>
-
-      {loading && (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text>Carregando palavras...</Text>
+      <ScrollView style={styles.wordList}>
+        <View style={styles.wordRow}>
+          {words.map((word, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.wordButton}
+              onPress={() => fetchWordDetails(word)}
+            >
+              <Text style={styles.wordText}>{word}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+      </ScrollView>
 
-      {error && <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>}
+      {loading && <ActivityIndicator size="large" />}
 
-      <FlatList
-        data={words}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text style={styles.word}>{item.word}</Text>
-            <Text style={styles.phonetic}>{item.phonetic}</Text>
-            <Text style={styles.definition}>{item.definition}</Text>
-            {item.synonyms && item.synonyms.length > 0 && (
-              <Text style={styles.synonyms}>
-                Sinônimos: {item.synonyms.join(", ")}
-              </Text>
-            )}
-          </View>
-        )}
-        ListEmptyComponent={
-          !loading && !error && words.length === 0 ? (
-            <Text style={styles.emptyMessage}>Nenhuma palavra encontrada.</Text>
-          ) : null // Retorna null em vez de false
-        }
-      />
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+          <Text style={styles.closeButtonText}>X</Text>
+        </TouchableOpacity>
+        <ScrollView style={styles.wordDetails}>
+          <SafeAreaView style={styles.Highlight}>
+            <Text style={styles.wordTitle}>{selectedWord?.word}</Text>
+            <Text style={styles.phonetic}>{selectedWord?.phonetic}</Text>
+          </SafeAreaView>
+          <Text style={styles.definition}>{selectedWord?.definition}</Text>
+          {selectedWord?.synonyms && (
+            <Text style={styles.synonyms}>
+              Sinônimos: {selectedWord.synonyms.join(", ")}
+            </Text>
+          )}
+        </ScrollView>
+      </Modal>
+
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 }
@@ -121,59 +407,87 @@ export default function WordList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
     backgroundColor: "#fff",
-    padding: 20,
   },
-  input: {
-    height: 40,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: "#fff",
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
-  },
-  loading: {
-    alignItems: "center",
+    textAlign: "center",
     marginVertical: 10,
   },
-  item: {
-    marginBottom: 20,
+  wordList: {
+    marginTop: 10,
+  },
+  wordRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+  },
+  wordButton: {
+    margin: 5,
     padding: 10,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f0f0f0",
     borderRadius: 5,
   },
-  word: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  phonetic: {
+  wordText: {
     fontSize: 16,
+  },
+  wordDetails: {
+    marginTop: 10,
+    padding: 10,
+  },
+  Highlight: {
+    alignItems: "center",
+    padding: 30,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    margin: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+
+  wordTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+
+  phonetic: {
+    fontSize: 18,
+    justifyContent: "center",
+    color: "#333",
+    marginVertical: 10,
     fontStyle: "italic",
-    marginTop: 5,
   },
   definition: {
-    fontSize: 14,
-    marginTop: 5,
+    fontSize: 16,
+    marginVertical: 5,
   },
   synonyms: {
-    fontSize: 14,
-    marginTop: 5,
-    color: "#555",
+    fontSize: 16,
+    marginVertical: 5,
+    color: "#888",
   },
-  emptyMessage: {
-    marginTop: 20,
+  closeButton: {
+    width: 40,
+    margin: 10,
+    padding: 10,
+    alignItems: "center",
+    backgroundColor: "#007BFF",
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: "#fff",
+  },
+  error: {
+    fontSize: 16,
+    color: "red",
     textAlign: "center",
-    color: "#aaa",
+    marginTop: 20,
   },
 });

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scheme": "english-wordlist",
+  "type": "module",
+  "engines": {
+    "node": "20.17.0"
+  },
   "scripts": {
     "start": "expo start -c",
     "android": "expo run:android",
@@ -10,7 +14,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-firebase/app": "^21.6.1",
+    "@react-native-firebase/app": "^21.10.0",
+    "@react-native-firebase/database": "^21.10.0",
     "@react-native-firebase/firestore": "^21.6.1",
     "@react-navigation/material-top-tabs": "^7.1.0",
     "@react-navigation/native": "^7.0.14",
@@ -24,13 +29,16 @@
     "expo-status-bar": "~2.0.0",
     "expo-updates": "~0.26.10",
     "firebase": "^11.1.0",
+    "firebase-admin": "^13.1.0",
     "react": "18.3.1",
     "react-native": "0.76.5",
+    "react-native-mmkv": "^3.2.0",
     "react-native-pager-view": "6.5.1",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
     "react-native-tab-view": "^4.0.5",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

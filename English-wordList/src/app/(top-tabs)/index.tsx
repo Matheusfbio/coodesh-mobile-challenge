@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -352,6 +353,15 @@ export default function WordList() {
     }
   };
 
+  const addToFavorites = async (word: Word) => {
+    try {
+      await set(ref(db, `favorites/${word.word}`), word);
+      Alert.alert("Palavra adicionada aos favoritos!");
+    } catch (error) {
+      Alert.alert(`Erro ao adicionar aos favoritos: ${error}`);
+    }
+  };
+
   const closeModal = () => {
     setModalVisible(false);
     setSelectedWord(null);
@@ -390,6 +400,14 @@ export default function WordList() {
             <Text style={styles.wordTitle}>{selectedWord?.word}</Text>
             <Text style={styles.phonetic}>{selectedWord?.phonetic}</Text>
           </SafeAreaView>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={() => addToFavorites(selectedWord!)}
+          >
+            <Text style={styles.favoriteButtonText}>
+              Adicionar aos Favoritos
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.definition}>{selectedWord?.definition}</Text>
           {selectedWord?.synonyms && (
             <Text style={styles.synonyms}>
@@ -489,5 +507,16 @@ const styles = StyleSheet.create({
     color: "red",
     textAlign: "center",
     marginTop: 20,
+  },
+  favoriteButton: {
+    backgroundColor: "gold",
+    padding: 10,
+    marginVertical: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  favoriteButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

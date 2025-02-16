@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
 } from "react-native";
 import { db } from "../../../firebaseConfig";
 import { ref, onValue } from "firebase/database";
@@ -40,6 +40,7 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
       }
     } catch (error) {
       console.error(`Erro ao buscar a palavra ${word}:`, error);
+      // Alert.alert(`Erro ao buscar a palavra ${word}: ${error}`);
     }
     return {
       word,
@@ -73,7 +74,7 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Histórico de Pesquisas</Text>
       <ScrollView>
         {history.map((wordData, index) => (
@@ -86,7 +87,7 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -1,3 +1,4 @@
+
 # Mobile Challenge Coodesh
 
 ## Introdução
@@ -6,7 +7,7 @@ Resultado sobre o desafio Coodesh para validar as minha habilidades como Mobile 
 
 ### Atenção importante
 
-O firebaseConfig.js vai ficar disponivel ate o resultado final do teste
+Configurações do firebase so vai ficar disponivel ate 5 dias a partir de 17/02/25 - 21/05/2025 ate as 23:59
 
 ### Descrição
 
@@ -14,7 +15,11 @@ O proposito do teste é criar uma app para listar palavras em ingles usando como
 
 ### Capturas de Tela / Demo
 
-https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
+
+
+https://github.com/user-attachments/assets/04fd38f5-acd3-4da3-b8fa-1ce781cf6168
+
+
 
 #### Funcionalidades implementadas
 

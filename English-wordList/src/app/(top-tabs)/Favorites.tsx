@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { db } from "../../../firebaseConfig";
 import { ref, onValue, remove } from "firebase/database";
@@ -36,7 +37,7 @@ export default function Favorites() {
   const removeFromFavorites = async (word: string) => {
     try {
       await remove(ref(db, `favorites/${word}`));
-      console.log("Palavra removida dos favoritos!");
+      Alert.alert("Palavra removida dos favoritos!");
     } catch (error) {
       console.error("Erro ao remover dos favoritos:", error);
     }

@@ -14,10 +14,7 @@ O proposito do teste é criar uma app para listar palavras em ingles usando como
 
 ### Capturas de Tela / Demo
 
-
 https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
-
-
 
 #### Funcionalidades
 
@@ -27,7 +24,7 @@ https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
 #### Tecnologias
 
 - React native expo
-- JSX/TSX (html inside js/ts code)
+- JS/TSX (html inside js/ts code)
 - StyleSheet
 - Firebase(Cloud Firestore) & Firebase Config
 - Expo Router

@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { db } from "../../../firebaseConfig";
 import { ref, set, onValue, push } from "firebase/database";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Audio } from "expo-av"; // Importa o módulo de áudio do Expo
 
 interface Word {
   id: string;
@@ -20,6 +22,7 @@ interface Word {
   phonetic: string;
   synonyms?: string[];
   example?: string;
+  audioUrl?: string | null;
 }
 
 const words: string[] = [
@@ -291,7 +294,10 @@ export default function WordList() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
+  // Histórico do Firebase
   useEffect(() => {
     const historyRef = ref(db, "history");
     onValue(historyRef, (snapshot) => {
@@ -304,47 +310,126 @@ export default function WordList() {
     });
   }, []);
 
+  useEffect(() => {
+    const loadRecentSearches = async () => {
+      try {
+        const storedRecent = await AsyncStorage.getItem("recentSearches");
+        if (storedRecent) {
+          setRecentSearches(JSON.parse(storedRecent));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar buscas recentes:", error);
+      }
+    };
+    loadRecentSearches();
+  }, []);
+
+  // Cleanup do áudio
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
   const fetchWordDetails = async (word: string) => {
     setLoading(true);
     setError(null);
 
     try {
+      const cachedData = await AsyncStorage.getItem(word);
+      if (cachedData) {
+        console.log(`Dados em cache para ${word}:`, cachedData);
+        try {
+          const parsedCache = JSON.parse(cachedData);
+          setSelectedWord(parsedCache.data);
+          setModalVisible(true);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error(`Erro ao parsear cache para ${word}:`, e);
+          await AsyncStorage.removeItem(word);
+        }
+      }
+
+      // Requisição à API
       const response = await fetch(
         `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
       );
-
       if (!response.ok) {
-        throw new Error("Essa palavra não existe");
+        throw new Error(
+          `Erro na requisição: ${response.status} ${response.statusText}`
+        );
       }
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        console.log("Resposta da API:", data);
+        if (data.title && data.title === "No Definitions Found") {
+          throw new Error("Essa palavra não existe");
+        }
+        // Extraindo URL de áudio e usando o mesmo método do History para phonetic:
+        const audioUrl =
+          data[0].phonetics?.find((p: any) => p.audio && p.audio.trim() !== "")
+            ?.audio || null;
+        const fetchedWord: Word = {
+          id: data[0].word,
+          word: data[0].word,
+          phonetic: data[0].phonetics?.[0]?.text || "Pronúncia não disponível",
+          definition:
+            data[0].meanings
+              ?.flatMap((meaning: any) =>
+                meaning.definitions.map((def: any) => {
+                  const definitionText = def.definition;
+                  const exampleText = def.example
+                    ? `Exemplo: ${def.example}`
+                    : "";
+                  return `${definitionText}\n${exampleText}`;
+                })
+              )
+              ?.join("\n") || "Definição não disponível",
+          synonyms: data[0].meanings?.flatMap(
+            (meaning: any) => meaning.synonyms
+          ),
+          audioUrl,
+        };
 
-      const data = await response.json();
+        // Atualiza Firebase e histórico
+        await set(ref(db, `words/${fetchedWord.word}`), data);
+        console.log("Dados enviados com sucesso para o Firebase!");
+        await push(ref(db, "history"), fetchedWord.word);
+        await AsyncStorage.setItem(
+          word,
+          JSON.stringify({ data: fetchedWord, timestamp: Date.now() })
+        );
 
-      const fetchedWord: Word = {
-        id: data[0].word,
-        word: data[0].word,
-        phonetic: data[0].phonetic || "Pronúncia não disponível",
-        definition:
-          data[0].meanings
-            ?.flatMap((meaning: any) =>
-              meaning.definitions.map((def: any) => {
-                const definitionText = def.definition;
-                const exampleText = def.example
-                  ? `Exemplo: ${def.example}`
-                  : "";
-                return `${definitionText}\n${exampleText}`;
-              })
-            )
-            ?.join("\n") || "Definição não disponível",
-        synonyms: data[0].meanings?.flatMap((meaning: any) => meaning.synonyms),
-      };
+        try {
+          const recentSearchesKey = "recentSearches";
+          const storedRecent = await AsyncStorage.getItem(recentSearchesKey);
+          let updatedRecent: string[] = storedRecent
+            ? JSON.parse(storedRecent)
+            : [];
+          if (!updatedRecent.includes(fetchedWord.word)) {
+            updatedRecent.unshift(fetchedWord.word);
+            updatedRecent = updatedRecent.slice(0, 10);
+            await AsyncStorage.setItem(
+              recentSearchesKey,
+              JSON.stringify(updatedRecent)
+            );
+            setRecentSearches(updatedRecent);
+          }
+        } catch (error) {
+          console.error("Erro ao atualizar buscas recentes:", error);
+        }
 
-      await set(ref(db, `words/${fetchedWord.word}`), data);
-      console.log("Dados enviados com sucesso para o Firebase!");
-
-      await push(ref(db, "history"), fetchedWord.word);
-
-      setSelectedWord(fetchedWord);
-      setModalVisible(true);
+        setSelectedWord(fetchedWord);
+        setModalVisible(true);
+      } else {
+        const text = await response.text();
+        console.log("Resposta não-JSON da API:", text);
+        throw new Error("Resposta inesperada da API (não JSON).");
+      }
     } catch (err: any) {
       console.error("Erro ao buscar palavra:", err);
       setError(err.message || "Erro ao carregar os dados.");
@@ -362,15 +447,34 @@ export default function WordList() {
     }
   };
 
+  const playSound = async () => {
+    if (selectedWord && selectedWord.audioUrl) {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync({
+          uri: selectedWord.audioUrl,
+        });
+        setSound(newSound);
+        await newSound.playAsync();
+      } catch (error: any) {
+        Alert.alert("Erro ao tocar áudio", error.message);
+      }
+    } else {
+      Alert.alert("Áudio indisponível para esta palavra");
+    }
+  };
+
   const closeModal = () => {
     setModalVisible(false);
     setSelectedWord(null);
+    if (sound) {
+      sound.unloadAsync();
+      setSound(null);
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Word List</Text>
-
       <ScrollView style={styles.wordList}>
         <View style={styles.wordRow}>
           {words.map((word, index) => (
@@ -392,32 +496,50 @@ export default function WordList() {
         animationType="slide"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-          <Text style={styles.closeButtonText}>X</Text>
-        </TouchableOpacity>
-        <ScrollView style={styles.wordDetails}>
-          <SafeAreaView style={styles.Highlight}>
-            <Text style={styles.wordTitle}>{selectedWord?.word}</Text>
-            <Text style={styles.phonetic}>{selectedWord?.phonetic}</Text>
-          </SafeAreaView>
-          <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={() => addToFavorites(selectedWord!)}
-          >
-            <Text style={styles.favoriteButtonText}>
-              Adicionar aos Favoritos
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.definition}>{selectedWord?.definition}</Text>
-          {selectedWord?.synonyms && (
-            <Text style={styles.synonyms}>
-              Sinônimos: {selectedWord.synonyms.join(", ")}
-            </Text>
+        <View style={styles.modalContainer}>
+          {loading ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <ScrollView>
+              {selectedWord && (
+                <>
+                  <Text style={styles.wordTitle}>{selectedWord.word}</Text>
+                  <Text style={styles.phonetic}>{selectedWord.phonetic}</Text>
+                  <Text style={styles.definition}>
+                    {selectedWord.definition}
+                  </Text>
+                  {selectedWord.synonyms && (
+                    <Text style={styles.synonyms}>
+                      Sinônimos: {selectedWord.synonyms.join(", ")}
+                    </Text>
+                  )}
+                  {selectedWord.audioUrl && (
+                    <TouchableOpacity
+                      onPress={playSound}
+                      style={styles.playButton}
+                    >
+                      <Text style={styles.playButtonText}>Ouvir Pronúncia</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => addToFavorites(selectedWord)}
+                    style={styles.favoriteButton}
+                  >
+                    <Text style={styles.favoriteButtonText}>
+                      Adicionar aos Favoritos
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Fechar</Text>
+              </TouchableOpacity>
+            </ScrollView>
           )}
-        </ScrollView>
+        </View>
       </Modal>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 }
@@ -425,22 +547,19 @@ export default function WordList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
     backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 10,
   },
   wordList: {
-    marginTop: 10,
+    marginVertical: 20,
   },
   wordRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "flex-start",
   },
   wordButton: {
     margin: 5,
@@ -451,35 +570,20 @@ const styles = StyleSheet.create({
   wordText: {
     fontSize: 16,
   },
-  wordDetails: {
-    marginTop: 10,
-    padding: 10,
+  modalContainer: {
+    flex: 1,
+    padding: 20,
   },
-  Highlight: {
-    alignItems: "center",
-    padding: 30,
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    margin: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-
   wordTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    marginBottom: 8,
   },
-
   phonetic: {
     fontSize: 18,
-    justifyContent: "center",
-    color: "#333",
-    marginVertical: 10,
     fontStyle: "italic",
+    marginVertical: 10,
+    color: "#333",
   },
   definition: {
     fontSize: 16,
@@ -490,23 +594,17 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     color: "#888",
   },
-  closeButton: {
-    width: 40,
-    margin: 10,
+  playButton: {
+    backgroundColor: "#4CAF50",
     padding: 10,
-    alignItems: "center",
-    backgroundColor: "#007BFF",
+    marginVertical: 10,
     borderRadius: 5,
+    alignItems: "center",
   },
-  closeButtonText: {
+  playButtonText: {
     fontSize: 16,
+    fontWeight: "bold",
     color: "#fff",
-  },
-  error: {
-    fontSize: 16,
-    color: "red",
-    textAlign: "center",
-    marginTop: 20,
   },
   favoriteButton: {
     backgroundColor: "gold",
@@ -518,5 +616,22 @@ const styles = StyleSheet.create({
   favoriteButtonText: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  closeButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    marginVertical: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: "#fff",
+  },
+  errorText: {
+    color: "red",
+  },
+  historyList: {
+    marginVertical: 10,
   },
 });

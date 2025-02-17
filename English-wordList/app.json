@@ -2,6 +2,7 @@
   "expo": {
     "name": "English-wordList",
     "slug": "English-wordList",
+    "scheme": "english-wordlist",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -6,7 +6,7 @@ Resultado sobre o desafio Coodesh para validar as minha habilidades como Mobile 
 
 ### Atenção importante
 
-==O firebaseConfig.js vai ficar disponivel ate o resultado final do teste==
+O firebaseConfig.js vai ficar disponivel ate o resultado final do teste
 
 ### Descrição
 

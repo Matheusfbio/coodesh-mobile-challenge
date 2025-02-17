@@ -503,8 +503,10 @@ export default function WordList() {
             <ScrollView>
               {selectedWord && (
                 <>
-                  <Text style={styles.wordTitle}>{selectedWord.word}</Text>
-                  <Text style={styles.phonetic}>{selectedWord.phonetic}</Text>
+                  <View style={styles.Highlight}>
+                    <Text style={styles.wordTitle}>{selectedWord.word}</Text>
+                    <Text style={styles.phonetic}>{selectedWord.phonetic}</Text>
+                  </View>
                   <Text style={styles.definition}>
                     {selectedWord.definition}
                   </Text>
@@ -633,5 +635,17 @@ const styles = StyleSheet.create({
   },
   historyList: {
     marginVertical: 10,
+  },
+  Highlight: {
+    alignItems: "center",
+    padding: 30,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    margin: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });

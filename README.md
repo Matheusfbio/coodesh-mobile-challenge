@@ -16,17 +16,25 @@ O proposito do teste é criar uma app para listar palavras em ingles usando como
 
 https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
 
-#### Funcionalidades
+#### Funcionalidades implementadas
 
-- Buscar as palavra que o usuario digitou na tela de home via API
-- Navegação entre as telas de Home, Favoritos e Historico (apenas a Home esta chamando os dados, a tela de Favoritos e Historico não foi concluido)
+- algumas palavras de exemplo em que o usuario pode clicar e obter informações(palavra, fonética, audio e significado) na tela.
+- Navegação entre as telas de Home, Favoritos e Historico
+- O usuario pode ver as palavras vistas na tela de historico.
+- O usuario pode favoritar e remover a palavra na tela de favoritos.
+
+#### Funcionalidades não implementadas
+
+- Login com a google(Email & senha ou Google sign).
+- Injeção de Dependência
+- Teste unitarios e automatizados
 
 #### Tecnologias
 
 - React native expo
 - JS/TSX (html inside js/ts code)
 - StyleSheet
-- Firebase(Cloud Firestore) & Firebase Config
+- Firebase(Realtime Database) & Firebase Config
 - Expo Router
 - Expo update (manage branches and channels with EAS CLI)
 
@@ -40,7 +48,7 @@ https://github.com/user-attachments/assets/a387ede8-2476-452b-86aa-4f254d85fbc6
 2. Use o link a seguir, para ter acesso a ultima preview:
 
 ```
-https://expo.dev/preview/update?message=feat%3A%20preview%20branch%20and%20get%20data%20words&updateRuntimeVersion=1.0.0&createdAt=2025-01-02T15%3A59%3A17.796Z&slug=exp&projectId=2f59c25e-eded-4382-9aef-ed1f5d5b466a&group=41ed6938-b9ff-4cae-83da-5cd655af8fe8
+https://expo.dev/preview/update?message=create%20the%20highlight%20for%20word%20and%20phonetic&updateRuntimeVersion=1.0.0&createdAt=2025-02-17T04%3A36%3A04.210Z&slug=exp&projectId=2f59c25e-eded-4382-9aef-ed1f5d5b466a&group=508639c6-7fe8-435d-8bae-d55f8ee4ba58
 ```
 
 pronto, você vai visualizar o projeto.
@@ -56,6 +64,7 @@ https://github.com/Matheusfbio/coodesh-mobile-challenge.git
 ```
 
 2. Instale as dependencias:
+   x
 
 ```
 npm install
